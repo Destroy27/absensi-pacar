@@ -3,12 +3,13 @@
  * - Memuat anggota & sesi hari ini
  * - Cek jendela waktu buka/tutup + hitung mundur
  * - Simpan / perbarui absensi ke Firestore
+ * - Daftar "sudah absen" diperbarui real-time (onSnapshot)
  */
 import {
-  collection, doc, getDoc, getDocs, query, where, setDoc, serverTimestamp
+  collection, doc, getDoc, getDocs, onSnapshot, query, where, setDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
-  db, STATUS, STATUS_KEYS, todayStr, fmtDateID, fmtTime,
+  db, STATUS, STATUS_KEYS, todayStr, fmtDateID,
   escapeHtml, toast, statusBadge, sessionState
 } from "./common.js";
 
@@ -20,7 +21,9 @@ const state = {
   settings: {},
   status: "hadir",
   existing: null,
-  timer: null
+  timer: null,
+  unsubToday: null,
+  lastCode: null
 };
 
 init();
@@ -31,6 +34,10 @@ init();
 async function init() {
   $("#todayLabel").textContent = fmtDateID(todayStr());
   renderStatusGrid();
+
+  // Listener dipasang lebih dulu supaya form tetap hidup walau data gagal dimuat.
+  $("#member").addEventListener("change", onMemberChange);
+  $("#absenForm").addEventListener("submit", onSubmit);
 
   try {
     await Promise.all([loadSettings(), loadMembers(), loadSession()]);
@@ -43,11 +50,14 @@ async function init() {
   applyBranding();
   renderMembers();
   renderSession();
-  await refreshToday();
   startCountdown();
 
-  $("#member").addEventListener("change", onMemberChange);
-  $("#absenForm").addEventListener("submit", onSubmit);
+  try {
+    watchToday();
+  } catch (err) {
+    console.error(err);
+    setMsg("Gagal memuat daftar absen: " + err.message, "err");
+  }
 }
 
 /* =========================================================
@@ -119,6 +129,12 @@ function renderStatusGrid() {
   });
 }
 
+function setStatus(status) {
+  state.status = STATUS[status] ? status : "hadir";
+  const radio = document.querySelector(`input[name="status"][value="${state.status}"]`);
+  if (radio) radio.checked = true;
+}
+
 function renderMembers() {
   const select = $("#member");
   if (!state.members.length) {
@@ -127,7 +143,7 @@ function renderMembers() {
     return;
   }
   select.innerHTML = `<option value="">Pilih nama…</option>` + state.members.map((m) =>
-    `<option value="${m.id}">${escapeHtml(m.emoji || "💗")} ${escapeHtml(m.name)}${m.nickname ? ` (${escapeHtml(m.nickname)})` : ""}</option>`
+    `<option value="${escapeHtml(m.id)}">${escapeHtml(m.emoji || "💗")} ${escapeHtml(m.name)}${m.nickname ? ` (${escapeHtml(m.nickname)})` : ""}</option>`
   ).join("");
 }
 
@@ -143,6 +159,7 @@ function renderSession() {
 
   const blocked = !st.open;
   $("#submitBtn").disabled = blocked || !state.members.length;
+
   if (blocked && s) {
     setMsg(st.code === "wait"
       ? `Absen belum dibuka. Buka pukul ${s.openAt}.`
@@ -164,30 +181,26 @@ function startCountdown() {
 
     const now = new Date();
     const st = sessionState(s, now);
-    let label, target;
 
-    if (st.code === "open") {
-      label = "Sisa waktu absen";
-      target = atTime(s.closeAt);
-    } else if (st.code === "wait") {
-      label = "Absen dibuka dalam";
-      target = atTime(s.openAt);
-    } else {
+    // Status jendela berubah (buka -> tutup) -> segarkan tombol & pill.
+    if (st.code !== state.lastCode) {
+      state.lastCode = st.code;
+      renderSession();
+    }
+
+    if (st.code === "closed" || st.code === "none") {
       el.innerHTML = `<span class="lbl">Status</span>Absen ditutup`;
       return;
     }
 
+    const label = st.code === "open" ? "Sisa waktu absen" : "Absen dibuka dalam";
+    const target = atTime(st.code === "open" ? s.closeAt : s.openAt);
     const diff = Math.max(0, target - now);
+
     const h = Math.floor(diff / 3.6e6);
     const m = Math.floor((diff % 3.6e6) / 6e4);
     const sec = Math.floor((diff % 6e4) / 1000);
     el.innerHTML = `<span class="lbl">${label}</span>${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-
-    // Perbarui status tombol tiap detik bila jendela berubah
-    if (st.open !== (state.session._lastOpen ?? null)) {
-      state.session._lastOpen = st.open;
-      renderSession();
-    }
   };
   tick();
   state.timer = setInterval(tick, 1000);
@@ -201,21 +214,32 @@ function atTime(hm) {
 }
 
 /* =========================================================
-   Absensi hari ini
+   Absensi hari ini (real-time)
    ========================================================= */
-async function refreshToday() {
+function watchToday() {
   if (!state.session) return;
 
-  const snap = await getDocs(
-    query(collection(db, "attendance"), where("sessionId", "==", state.session.id))
+  state.unsubToday?.();
+  const q = query(collection(db, "attendance"), where("sessionId", "==", state.session.id));
+
+  state.unsubToday = onSnapshot(q,
+    (snap) => {
+      const rows = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => millis(a.createdAt) - millis(b.createdAt));
+      renderToday(rows);
+    },
+    (err) => {
+      console.error(err);
+      $("#todayList").innerHTML = `<li class="empty">Gagal memuat daftar absen.</li>`;
+    }
   );
-  const rows = snap.docs
-    .map((d) => ({ id: d.id, ...d.data() }))
-    .sort((a, b) => (fmtTime(a.createdAt) > fmtTime(b.createdAt) ? 1 : -1));
+}
 
+function renderToday(rows) {
   $("#todayCount").textContent = `${rows.length} orang`;
-
   const list = $("#todayList");
+
   if (!rows.length) {
     list.innerHTML = `<li class="empty">Belum ada yang absen.</li>`;
     return;
@@ -223,16 +247,22 @@ async function refreshToday() {
 
   list.innerHTML = rows.map((r) => {
     const member = state.members.find((m) => m.id === r.memberId);
+    const time = r.updatedAt?.toDate?.() || r.createdAt?.toDate?.();
+    const hhmm = time
+      ? `${String(time.getHours()).padStart(2, "0")}:${String(time.getMinutes()).padStart(2, "0")}`
+      : "—";
     return `<li>
       <span class="avatar">${escapeHtml(member?.emoji || "💗")}</span>
       <span class="meta">
         <strong>${escapeHtml(r.memberName || member?.name || "—")}</strong>
-        <span>${escapeHtml(fmtTime(r.updatedAt || r.createdAt))}${r.reason ? " · " + escapeHtml(r.reason) : ""}</span>
+        <span>${escapeHtml(hhmm)}${r.reason ? " · " + escapeHtml(r.reason) : ""}</span>
       </span>
       ${statusBadge(r.status)}
     </li>`;
   }).join("");
 }
+
+const millis = (ts) => ts?.toMillis?.() || 0;
 
 /* =========================================================
    Form
@@ -241,6 +271,7 @@ async function onMemberChange() {
   const memberId = $("#member").value;
   state.existing = null;
   $("#reason").value = "";
+  setStatus("hadir");
 
   if (!memberId || !state.session) return;
 
@@ -249,9 +280,7 @@ async function onMemberChange() {
     if (snap.exists()) {
       const data = snap.data();
       state.existing = data;
-      state.status = data.status || "hadir";
-      const radio = document.querySelector(`input[name="status"][value="${state.status}"]`);
-      if (radio) radio.checked = true;
+      setStatus(data.status);
       $("#reason").value = data.reason || "";
       setMsg("Kamu sudah absen hari ini. Kirim ulang untuk mengubah.", "");
     } else {
@@ -298,11 +327,14 @@ async function onSubmit(event) {
 
     await setDoc(ref, payload, { merge: true });
 
-    setMsg(`Tersimpan: ${member.name} — ${STATUS[state.status].label}`, "ok");
-    toast("Absen berhasil disimpan 💗", "ok");
+    // Simpan hanya data asli dari server (bukan sentinel serverTimestamp)
+    // agar createdAt tidak tertimpa saat kirim ulang.
+    const fresh = await getDoc(ref);
+    state.existing = fresh.exists() ? fresh.data() : null;
 
-    state.existing = payload;
-    await refreshToday();
+    const label = STATUS[state.status]?.label || state.status;
+    setMsg(`Tersimpan: ${member.name} — ${label}`, "ok");
+    toast("Absen berhasil disimpan 💗", "ok");
   } catch (err) {
     console.error(err);
     setMsg("Gagal menyimpan: " + err.message, "err");
@@ -310,6 +342,7 @@ async function onSubmit(event) {
   } finally {
     btn.disabled = false;
     btn.textContent = "Kirim Absen";
+    renderSession();
   }
 }
 

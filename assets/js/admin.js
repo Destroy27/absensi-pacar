@@ -7,7 +7,7 @@
 import {
   collection, doc, getDoc, getDocs, addDoc, setDoc, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { db, fmtDateID, todayStr, toast, escapeHtml, sessionState } from "./common.js";
+import { db, fmtDateID, todayStr, toMinutes, toast, escapeHtml, sessionState } from "./common.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -126,8 +126,8 @@ function renderMembers() {
         <span>${escapeHtml(m.nickname || "—")}${m.active === false ? " · nonaktif" : ""}</span>
       </span>
       <span class="actions">
-        <button class="btn btn-ghost btn-sm" data-edit-member="${m.id}" type="button">Edit</button>
-        <button class="btn btn-danger btn-sm" data-del-member="${m.id}" type="button">Hapus</button>
+        <button class="btn btn-ghost btn-sm" data-edit-member="${escapeHtml(m.id)}" type="button">Edit</button>
+        <button class="btn btn-danger btn-sm" data-del-member="${escapeHtml(m.id)}" type="button">Hapus</button>
       </span>
     </li>`).join("");
 
@@ -151,7 +151,7 @@ function bindMemberForm() {
       name,
       nickname: $("#memberNick").value.trim(),
       emoji: $("#memberEmoji").value.trim() || "💗",
-      active: true
+      active: $("#memberActive").checked
     };
 
     try {
@@ -180,6 +180,7 @@ function editMember(id) {
   $("#memberName").value = m.name || "";
   $("#memberNick").value = m.nickname || "";
   $("#memberEmoji").value = m.emoji || "💗";
+  $("#memberActive").checked = m.active !== false;
   $("#memberFormTitle").textContent = "Edit Anggota";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -189,6 +190,7 @@ function resetMemberForm() {
   $("#memberName").value = "";
   $("#memberNick").value = "";
   $("#memberEmoji").value = "💗";
+  $("#memberActive").checked = true;
   $("#memberFormTitle").textContent = "Tambah Anggota";
 }
 
@@ -229,16 +231,18 @@ function renderSessions() {
 
   const now = new Date();
   list.innerHTML = state.sessions.map((s) => {
-    const st = s.date === todayStr() ? sessionState(s, now) : { text: "—", code: "" };
+    const isToday = s.date === todayStr();
+    const st = isToday ? sessionState(s, now) : null;
     return `<li>
       <span class="avatar">📅</span>
       <span class="meta">
         <strong>${escapeHtml(s.title || "Sesi")}</strong>
         <span>${escapeHtml(fmtDateID(s.date))} · ${escapeHtml(s.openAt)}–${escapeHtml(s.closeAt)}</span>
       </span>
+      ${st ? `<span class="pill ${st.code}">${escapeHtml(st.text)}</span>` : ""}
       <span class="actions">
-        <button class="btn btn-ghost btn-sm" data-edit-session="${s.id}" type="button">Edit</button>
-        <button class="btn btn-danger btn-sm" data-del-session="${s.id}" type="button">Hapus</button>
+        <button class="btn btn-ghost btn-sm" data-edit-session="${escapeHtml(s.id)}" type="button">Edit</button>
+        <button class="btn btn-danger btn-sm" data-del-session="${escapeHtml(s.id)}" type="button">Hapus</button>
       </span>
     </li>`;
   }).join("");
@@ -266,6 +270,9 @@ function bindSessionForm() {
     };
 
     if (!data.date) return toast("Tanggal wajib diisi", "err");
+    if (toMinutes(data.closeAt) <= toMinutes(data.openAt)) {
+      return toast("Jam tutup harus lebih akhir dari jam buka", "err");
+    }
 
     try {
       if (id) {
@@ -325,6 +332,7 @@ async function removeSession(id) {
 function fillSettingsForm() {
   const s = state.settings;
   $("#setTitle").value = s.appTitle || "";
+  $("#setPageTitle").value = s.pageTitle || "";
   $("#setSubtitle").value = s.subtitle || "";
   $("#setRequireReason").checked = !!s.requireReason;
 }
@@ -335,6 +343,7 @@ function bindSettingsForm() {
 
     const data = {
       appTitle: $("#setTitle").value.trim() || "Absensi Harian",
+      pageTitle: $("#setPageTitle").value.trim() || "Absen Hari Ini",
       subtitle: $("#setSubtitle").value.trim(),
       requireReason: $("#setRequireReason").checked
     };

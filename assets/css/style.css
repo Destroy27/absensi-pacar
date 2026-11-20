@@ -59,6 +59,7 @@ code{
   position:sticky;top:0;z-index:50;
   background:rgba(255,248,250,.82);
   backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line);
 }
 .topbar-inner{
@@ -148,6 +149,9 @@ select{appearance:none;cursor:pointer;
 .status-chip input{position:absolute;opacity:0;pointer-events:none}
 .status-chip .emoji{font-size:1.15rem;line-height:1}
 .status-chip:hover{border-color:#f0c9d7;transform:translateY(-1px)}
+/* Fallback untuk browser tanpa :has() */
+.status-chip:focus-within{border-color:var(--rose);box-shadow:0 0 0 3px rgba(232,87,138,.12)}
+.status-chip input:checked + .emoji{transform:scale(1.12)}
 .status-chip:has(input:checked){color:var(--ink);box-shadow:var(--shadow-sm)}
 .status-chip.hadir:has(input:checked){border-color:var(--green);background:var(--green-soft)}
 .status-chip.sakit:has(input:checked){border-color:var(--amber);background:var(--amber-soft)}
@@ -238,7 +242,7 @@ select{appearance:none;cursor:pointer;
 .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px}
 .toolbar .field{min-width:140px}
 
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:18px}
 .stat{
   border:1px solid var(--line);border-radius:14px;padding:13px;
   background:#fffdfe;text-align:center;
@@ -249,6 +253,7 @@ select{appearance:none;cursor:pointer;
 .stat.sakit b{color:var(--amber)}
 .stat.izin b{color:var(--blue)}
 .stat.dispen b{color:var(--purple)}
+.stat.pct b{color:var(--rose-dark)}
 
 /* ===== Table ===== */
 .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px}

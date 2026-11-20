@@ -23,20 +23,20 @@ siap di-hosting gratis di **GitHub Pages**.
 - **Countdown live** sisa waktu absen (atau waktu menuju sesi dibuka)
 - 4 status: **Hadir**, **Sakit**, **Izin**, **Dispen** — alasan bisa diwajibkan lewat pengaturan
 - Absen **sekali per sesi**; kirim ulang untuk mengubah jawaban
-- Daftar "sudah absen" hari ini tampil real-time di samping form
+- Daftar "sudah absen" hari ini **real-time** (Firestore `onSnapshot`)
 
 ### Halaman Data
 - Rekap seluruh absensi dalam satu tabel
 - Filter berdasarkan **sesi**, **status**, dan **pencarian** nama/alasan
-- Statistik: total, hadir, sakit, izin, dan **persentase kehadiran**
+- Statistik: total, hadir, sakit, izin, dispen, dan **persentase kehadiran**
 - **Export CSV** (siap dibuka di Excel) dan **cetak / simpan PDF**
 - Hapus satu baris data bila salah input
 
 ### Halaman Admin
 - Masuk dengan **PIN admin** (PIN awal `123456`, bisa diganti)
-- **Kelola anggota**: tambah, edit, hapus (nama, panggilan, emoji)
+- **Kelola anggota**: tambah, edit, hapus (nama, panggilan, emoji, aktif/nonaktif)
 - **Kelola sesi**: judul, tanggal, jam buka, jam tutup
-- **Pengaturan**: judul aplikasi, teks halaman absen, wajib alasan, ganti PIN
+- **Pengaturan**: judul aplikasi, judul halaman absen, teks sambutan, wajib alasan, ganti PIN
 
 ---
 
@@ -117,6 +117,7 @@ ID dokumen: `{sessionId}__{memberId}` → satu anggota hanya punya satu baris pe
 | Field | Tipe | Default |
 |---|---|---|
 | `appTitle` | string | `Absensi Harian` |
+| `pageTitle` | string | `Absen Hari Ini` |
 | `subtitle` | string | teks halaman absen |
 | `requireReason` | boolean | `false` |
 | `adminPin` | string | `123456` |

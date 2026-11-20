@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%97%3C/text%3E%3C/svg%3E">
 </head>
 <body>
 
@@ -73,6 +73,10 @@
               <label for="memberEmoji">Emoji</label>
               <input id="memberEmoji" value="💗" maxlength="4">
             </div>
+            <label class="check">
+              <input id="memberActive" type="checkbox" checked>
+              <span>Tampil di halaman absen</span>
+            </label>
             <div class="row">
               <button class="btn btn-primary" type="submit">Simpan</button>
               <button class="btn btn-ghost" type="button" id="memberReset">Batal</button>
@@ -144,6 +148,10 @@
           <div class="field">
             <label for="setTitle">Judul aplikasi</label>
             <input id="setTitle" placeholder="Absensi Harian">
+          </div>
+          <div class="field">
+            <label for="setPageTitle">Judul halaman absen</label>
+            <input id="setPageTitle" placeholder="Absen Hari Ini">
           </div>
           <div class="field">
             <label for="setSubtitle">Teks di halaman absen</label>

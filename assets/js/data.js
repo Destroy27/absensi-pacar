@@ -8,7 +8,7 @@ import {
   collection, getDocs, doc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
-  db, STATUS, STATUS_KEYS, fmtDateID, fmtShortID, fmtTime, escapeHtml, toast, statusBadge
+  db, STATUS, fmtShortID, fmtTime, escapeHtml, toast, statusBadge
 } from "./common.js";
 
 const $ = (sel) => document.querySelector(sel);
@@ -124,7 +124,8 @@ function renderStats() {
     <div class="stat hadir"><b>${counts.hadir}</b><span>Hadir</span></div>
     <div class="stat sakit"><b>${counts.sakit}</b><span>Sakit</span></div>
     <div class="stat izin"><b>${counts.izin}</b><span>Izin</span></div>
-    <div class="stat dispen"><b>${pct}%</b><span>Kehadiran</span></div>`;
+    <div class="stat dispen"><b>${counts.dispen}</b><span>Dispen</span></div>
+    <div class="stat pct"><b>${pct}%</b><span>Kehadiran</span></div>`;
 }
 
 function renderTable() {
@@ -145,7 +146,7 @@ function renderTable() {
       <td class="reason">${r.reason ? escapeHtml(r.reason) : '<span class="muted">—</span>'}</td>
       <td>${escapeHtml(fmtTime(r.updatedAt || r.createdAt))}</td>
       <td class="no-print">
-        <button class="btn btn-danger btn-sm" data-del="${r.id}" type="button">Hapus</button>
+        <button class="btn btn-danger btn-sm" data-del="${escapeHtml(r.id)}" type="button">Hapus</button>
       </td>
     </tr>`).join("");
 
@@ -192,13 +193,19 @@ function exportCsv() {
   const a = document.createElement("a");
   a.href = url;
   a.download = `absensi-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  // Beri waktu browser memulai unduhan sebelum URL dilepas.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
   toast("CSV diunduh", "ok");
 }
 
+/** Cegah CSV/formula injection saat dibuka di Excel. */
 function csvCell(value) {
-  const s = String(value ?? "").replace(/"/g, '""');
+  let s = String(value ?? "");
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  s = s.replace(/"/g, '""');
   return /[;"\r\n]/.test(s) ? `"${s}"` : s;
 }
 
