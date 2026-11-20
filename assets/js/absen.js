@@ -340,9 +340,8 @@ async function onSubmit(event) {
     setMsg("Gagal menyimpan: " + err.message, "err");
     toast("Gagal menyimpan absen", "err");
   } finally {
-    btn.disabled = false;
     btn.textContent = "Kirim Absen";
-    renderSession();
+    btn.disabled = !sessionState(state.session).open || !state.members.length;
   }
 }
 
