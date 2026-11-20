@@ -85,13 +85,23 @@
           <span class="muted small" id="todayCount">0</span>
         </div>
         <ul class="list" id="todayList">
-          <li class="empty">Belum ada data.</li>
+          <li class="empty loading">Belum ada data.</li>
         </ul>
       </section>
 
     </aside>
   </div>
 </main>
+
+<div id="successOverlay" class="success-overlay" aria-hidden="true">
+  <div class="success-card" role="status">
+    <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+      <circle class="ring" cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="3"/>
+      <path d="M20 33l8 8 16-17" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <p class="success-text" id="successText">Absen tersimpan</p>
+  </div>
+</div>
 
 <div id="toast" class="toast"></div>
 

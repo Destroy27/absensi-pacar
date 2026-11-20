@@ -189,6 +189,7 @@ function startCountdown() {
     }
 
     if (st.code === "closed" || st.code === "none") {
+      el.classList.remove("is-urgent");
       el.innerHTML = `<span class="lbl">Status</span>Absen ditutup`;
       return;
     }
@@ -196,6 +197,9 @@ function startCountdown() {
     const label = st.code === "open" ? "Sisa waktu absen" : "Absen dibuka dalam";
     const target = atTime(st.code === "open" ? s.closeAt : s.openAt);
     const diff = Math.max(0, target - now);
+
+    // Beri denyut halus saat sisa waktu di bawah 60 detik.
+    el.classList.toggle("is-urgent", st.code === "open" && diff > 0 && diff < 60000);
 
     const h = Math.floor(diff / 3.6e6);
     const m = Math.floor((diff % 3.6e6) / 6e4);
@@ -335,6 +339,7 @@ async function onSubmit(event) {
     const label = STATUS[state.status]?.label || state.status;
     setMsg(`Tersimpan: ${member.name} — ${label}`, "ok");
     toast("Absen berhasil disimpan 💗", "ok");
+    showSuccess("Absen tersimpan");
   } catch (err) {
     console.error(err);
     setMsg("Gagal menyimpan: " + err.message, "err");
@@ -351,4 +356,19 @@ function setMsg(text, kind) {
   const el = $("#formMsg");
   el.textContent = text;
   el.className = "msg" + (kind ? " " + kind : "");
+}
+
+/* Overlay centang singkat setelah absen tersimpan (check-draw). */
+let successTimer = null;
+function showSuccess(text) {
+  const overlay = $("#successOverlay");
+  if (!overlay) return;
+  $("#successText").textContent = text;
+  overlay.classList.add("show");
+  overlay.setAttribute("aria-hidden", "false");
+  clearTimeout(successTimer);
+  successTimer = setTimeout(() => {
+    overlay.classList.remove("show");
+    overlay.setAttribute("aria-hidden", "true");
+  }, 1200);
 }

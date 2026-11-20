@@ -20,6 +20,9 @@ const state = {
   filtered: []
 };
 
+/* Nilai statistik terakhir, supaya count-up hanya jalan saat angka berubah. */
+const statPrev = [];
+
 init();
 
 /* =========================================================
@@ -119,13 +122,49 @@ function renderStats() {
   const total = state.filtered.length;
   const pct = total ? Math.round((counts.hadir / total) * 100) : 0;
 
-  $("#stats").innerHTML = `
-    <div class="stat"><b>${total}</b><span>Total</span></div>
-    <div class="stat hadir"><b>${counts.hadir}</b><span>Hadir</span></div>
-    <div class="stat sakit"><b>${counts.sakit}</b><span>Sakit</span></div>
-    <div class="stat izin"><b>${counts.izin}</b><span>Izin</span></div>
-    <div class="stat dispen"><b>${counts.dispen}</b><span>Dispen</span></div>
-    <div class="stat pct"><b>${pct}%</b><span>Kehadiran</span></div>`;
+  const cells = [
+    { value: total, label: "Total", cls: "", suffix: "" },
+    { value: counts.hadir, label: "Hadir", cls: "hadir", suffix: "" },
+    { value: counts.sakit, label: "Sakit", cls: "sakit", suffix: "" },
+    { value: counts.izin, label: "Izin", cls: "izin", suffix: "" },
+    { value: counts.dispen, label: "Dispen", cls: "dispen", suffix: "" },
+    { value: pct, label: "Kehadiran", cls: "pct", suffix: "%" }
+  ];
+
+  const statsEl = $("#stats");
+  statsEl.innerHTML = cells.map((c) =>
+    `<div class="stat${c.cls ? " " + c.cls : ""}"><b>${c.value}${c.suffix}</b><span>${c.label}</span></div>`
+  ).join("");
+
+  statsEl.querySelectorAll(".stat b").forEach((b, i) => {
+    const c = cells[i];
+    const key = c.value + c.suffix;
+    if (statPrev[i] === key) return; // angka sama, tidak perlu animasi ulang
+    statPrev[i] = key;
+    countUp(b, c.value, c.suffix);
+  });
+}
+
+/* Angka statistik berjalan 0 -> nilai akhir (count-up). */
+function countUp(el, target, suffix = "") {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    el.textContent = target + suffix;
+    return;
+  }
+  const duration = 600;
+  const start = performance.now();
+  const ease = (t) => 1 - Math.pow(1 - t, 3); // mendekati cubic-bezier(.22,1,.36,1)
+  el.textContent = "0" + suffix;
+  const frame = (now) => {
+    const p = Math.min(1, (now - start) / duration);
+    if (p < 1) {
+      el.textContent = Math.round(ease(p) * target) + suffix;
+      requestAnimationFrame(frame);
+    } else {
+      el.textContent = target + suffix;
+    }
+  };
+  requestAnimationFrame(frame);
 }
 
 function renderTable() {
