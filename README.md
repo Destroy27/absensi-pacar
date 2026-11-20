@@ -29,12 +29,12 @@ siap di-hosting gratis di **GitHub Pages**.
 - Rekap seluruh absensi dalam satu tabel
 - Filter berdasarkan **sesi**, **status**, dan **pencarian** nama/alasan
 - Statistik: total, hadir, sakit, izin, dispen, dan **persentase kehadiran**
-- **Export CSV** (siap dibuka di Excel) dan **cetak / simpan PDF**
+- **Export CSV** (ramah Excel) dan **cetak / simpan PDF**
 - Hapus satu baris data bila salah input
 
 ### Halaman Admin
 - Masuk dengan **PIN admin** (PIN awal `123456`, bisa diganti)
-- **Kelola anggota**: tambah, edit, hapus (nama, panggilan, emoji, aktif/nonaktif)
+- **Kelola anggota**: tambah, edit, hapus, dan tandai **aktif / nonaktif**
 - **Kelola sesi**: judul, tanggal, jam buka, jam tutup
 - **Pengaturan**: judul aplikasi, judul halaman absen, teks sambutan, wajib alasan, ganti PIN
 
@@ -49,7 +49,8 @@ siap di-hosting gratis di **GitHub Pages**.
 | SDK | Firebase Web SDK v10 (modular, via CDN) |
 | Hosting | GitHub Pages |
 
-Tanpa `npm install`, tanpa bundler — cukup buka filenya.
+Tanpa `npm install` dan tanpa bundler. Tetap butuh **satu server statis kecil**
+(lihat langkah 4), karena ES Module tidak berjalan lewat `file://`.
 
 ---
 
@@ -70,6 +71,7 @@ absensi-pacar/
 │       ├── data.js             # Logika halaman data
 │       └── admin.js            # Logika halaman admin
 ├── firestore.rules             # Aturan keamanan Firestore
+├── LICENSE
 └── README.md
 ```
 
@@ -83,7 +85,7 @@ absensi-pacar/
 | `name` | string | Nama lengkap |
 | `nickname` | string | Nama panggilan |
 | `emoji` | string | Ikon avatar |
-| `active` | boolean | `false` = disembunyikan dari form |
+| `active` | boolean | `false` = disembunyikan dari form absen |
 | `createdAt` | timestamp | Waktu dibuat |
 
 ### `sessions` — sesi absen
@@ -92,11 +94,13 @@ absensi-pacar/
 | `title` | string | Judul sesi |
 | `date` | string | `YYYY-MM-DD` |
 | `openAt` | string | Jam buka `HH:MM` |
-| `closeAt` | string | Jam tutup `HH:MM` |
+| `closeAt` | string | Jam tutup `HH:MM` (harus lebih akhir dari `openAt`) |
 | `auto` | boolean | `true` bila dibuat otomatis |
+| `createdAt` | timestamp | Waktu dibuat |
 
-> Jika hari ini belum ada sesi, halaman absen otomatis membuat sesi
-> **"Absen Harian"** pukul `00:00–23:59` agar aplikasi selalu bisa dipakai.
+> **Sesi otomatis:** kalau hari ini **belum ada satu pun sesi**, halaman absen membuat
+> sesi **"Absen Harian"** pukul `00:00–23:59`. Kalau sesi hari ini sudah ada tetapi
+> sudah lewat jam tutup, absen tidak bisa dilakukan sampai kamu membuat sesi baru di Admin.
 
 ### `attendance` — data kehadiran
 | Field | Tipe | Keterangan |
@@ -118,7 +122,7 @@ ID dokumen: `{sessionId}__{memberId}` → satu anggota hanya punya satu baris pe
 |---|---|---|
 | `appTitle` | string | `Absensi Harian` |
 | `pageTitle` | string | `Absen Hari Ini` |
-| `subtitle` | string | teks halaman absen |
+| `subtitle` | string | teks sambutan halaman absen |
 | `requireReason` | boolean | `false` |
 | `adminPin` | string | `123456` |
 
@@ -138,65 +142,91 @@ cd absensi-pacar
    - Pilih **Start in test mode**
    - Lokasi: `asia-southeast2 (Jakarta)`
 3. Buka **Project settings → Your apps → Web (`</>`)** → daftarkan app
-4. Salin `firebaseConfig` ke `assets/js/firebase-config.js`
+4. Buka `assets/js/firebase-config.js`. Isinya masih **config proyek contoh** —
+   **ganti seluruh objek `firebaseConfig`** dengan milik proyek Firebase kamu.
+   Jangan pakai config contoh, karena datanya bukan milikmu.
+
+> ⚠️ **Mode test hanya berlaku 30 hari.** Kalau langkah 3 dilewati, aplikasi akan
+> berhenti bisa menyimpan data setelah sebulan. Selalu pasang rules di langkah berikut.
 
 ### 3. Pasang aturan keamanan
 Buka **Firestore → Rules**, tempel isi `firestore.rules`, lalu **Publish**.
 
 ### 4. Jalankan lokal
-Karena memakai ES Module, buka lewat server kecil (bukan `file://`):
+ES Module butuh server, bukan `file://`:
 
 ```bash
-# Python
+# Python (port 8080)
 python -m http.server 8080
+# buka http://localhost:8080
 
-# atau Node
+# atau Node (port mengikuti yang dicetak, biasanya 3000)
 npx serve .
 ```
 
-Lalu buka `http://localhost:8080`.
-
 ### 5. Deploy ke GitHub Pages
-1. Push ke GitHub
+1. Push ke GitHub (repo harus **public** untuk akun gratis)
 2. **Settings → Pages → Source: Deploy from a branch**
 3. Pilih branch `main`, folder `/ (root)`, lalu **Save**
 4. Situs tersedia di `https://<username>.github.io/absensi-pacar/`
-
-> Tambahkan domain GitHub Pages ke **Firebase → Authentication → Settings → Authorized domains**
-> bila nanti memakai Firebase Auth. Untuk Firestore saja tidak perlu.
-
----
-
-## 🔐 Keamanan
-
-Aturan di `firestore.rules` membuka baca/tulis **hanya** pada empat koleksi aplikasi:
-
-```js
-match /members/{docId}    { allow read, write: if true; }
-match /sessions/{docId}   { allow read, write: if true; }
-match /attendance/{docId} { allow read, write: if true; }
-match /settings/{docId}   { allow read, write: if true; }
-```
-
-Catatan penting:
-
-- **PIN admin bukan autentikasi sungguhan.** PIN disimpan di Firestore dan hanya
-  menyembunyikan tampilan admin. Siapa pun yang tahu struktur database masih bisa
-  menulis lewat SDK.
-- Aplikasi ini cocok untuk **pemakaian pribadi / kelompok kecil**.
-- Untuk keamanan penuh, tambahkan **Firebase Authentication** dan ubah rules menjadi
-  `allow write: if request.auth != null;`.
-- Jangan pernah menaruh **service account key** di repo ini.
 
 ---
 
 ## 🧪 Alur Pemakaian
 
 1. Buka `admin.html` → masuk PIN `123456`
-2. Tambah anggota di tab **Anggota**
+2. Tambah anggota di tab **Anggota** (centang "Tampil di halaman absen")
 3. Buat sesi di tab **Sesi** (atau biarkan sesi harian otomatis)
-4. Bagikan `index.html` ke pengguna → mereka memilih nama dan absen
-5. Pantau rekap di `data.html`, export CSV bila perlu
+4. Bagikan **link** `https://<username>.github.io/absensi-pacar/` — bukan file HTML-nya
+5. Pantau rekap di `data.html`, export CSV berkala sebagai backup
+
+> Login admin disimpan di `sessionStorage`: tetap masuk sampai tab ditutup.
+> Tombol **Keluar** menghapus sesi login tersebut.
+
+---
+
+## 🔐 Keamanan
+
+Aturan di `firestore.rules` membuka baca/tulis **hanya** pada empat koleksi aplikasi,
+lalu menolak sisanya:
+
+```js
+match /members/{docId}    { allow read, write: if true; }
+match /sessions/{docId}   { allow read, write: if true; }
+match /attendance/{docId} { allow read, write: if true; }
+match /settings/{docId}   { allow read, write: if true; }
+
+// koleksi lain ditolak
+match /{document=**}      { allow read, write: if false; }
+```
+
+Yang perlu kamu tahu:
+
+- **PIN admin bukan autentikasi sungguhan.** PIN disimpan **teks biasa** di
+  `settings/app` dan bisa dibaca siapa pun yang membuka aplikasi. Jangan pakai PIN
+  yang sama dengan ATM, email, atau akun lain.
+- Siapa pun yang punya config Firebase bisa **membaca, mengubah, bahkan menghapus**
+  data lewat SDK. `firebase-config.js` memang aman dipublikasikan, tetapi rules-nya
+  yang menentukan siapa boleh apa.
+- Aplikasi ini cocok untuk **pemakaian pribadi / kelompok kecil**, bukan data sensitif.
+- Untuk keamanan penuh: tambahkan **Firebase Authentication**, lalu ubah rules menjadi
+  `allow write: if request.auth != null;`.
+- Jangan pernah menaruh **service account key** di repo ini.
+- Rutin **export CSV** sebagai backup.
+
+---
+
+## 🩺 Troubleshooting
+
+| Gejala | Penyebab | Solusi |
+|---|---|---|
+| `Missing or insufficient permissions` | Rules belum di-Publish | Firestore → Rules → **Publish** |
+| Halaman kosong / tidak jalan | Dibuka lewat `file://` | Jalankan server statis (langkah 4) |
+| Data tidak muncul, padahal sudah isi | `firebase-config.js` masih config contoh | Ganti dengan config proyekmu |
+| Absen otomatis gagal / error saat buka | Rules menolak tulis `sessions` | Pastikan rules `sessions` terpasang |
+| Absen tiba-tiba berhenti setelah ~30 hari | Mode test kedaluwarsa | Pasang `firestore.rules` |
+| `404` di GitHub Pages | Pages belum aktif / branch salah | Settings → Pages → `main` + `/ (root)` |
+| Tombol kirim mati | Di luar jam buka/tutup sesi | Buat sesi baru di Admin |
 
 ---
 
@@ -212,6 +242,6 @@ Catatan penting:
 
 ## 📄 Lisensi
 
-MIT — bebas dipakai dan dimodifikasi.
+MIT — lihat [LICENSE](LICENSE).
 
 Dibuat dengan 💗 untuk absensi harian yang simpel.
