@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Absensi — Absensi Harian</title>
+<meta name="description" content="Rekap, filter, cetak, dan export data absensi.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-dot">💗</span>
+      <span id="brandName">Absensi</span>
+    </a>
+    <nav class="nav">
+      <a href="index.html">Absen</a>
+      <a href="data.html" class="active">Data</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <p class="eyebrow">Rekap</p>
+    <h1>Data Absensi</h1>
+    <p class="sub">Lihat, cari, filter, cetak, dan export rekap kehadiran.</p>
+  </section>
+
+  <section class="card">
+
+    <div class="toolbar">
+      <div class="field">
+        <label for="fSession">Sesi</label>
+        <select id="fSession"><option value="">Semua sesi</option></select>
+      </div>
+      <div class="field">
+        <label for="fStatus">Status</label>
+        <select id="fStatus">
+          <option value="">Semua status</option>
+          <option value="hadir">Hadir</option>
+          <option value="sakit">Sakit</option>
+          <option value="izin">Izin</option>
+          <option value="dispen">Dispen</option>
+        </select>
+      </div>
+      <div class="field grow">
+        <label for="fSearch">Cari</label>
+        <input id="fSearch" type="search" placeholder="Nama atau alasan…">
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn btn-ghost" id="resetBtn" type="button">Reset</button>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="table-wrap">
+      <table class="table" id="table">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Sesi</th>
+            <th>Nama</th>
+            <th>Status</th>
+            <th>Alasan</th>
+            <th>Jam</th>
+            <th class="no-print"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="7" class="empty">Memuat…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="row-end no-print">
+      <span class="muted small" id="rowInfo"></span>
+      <div class="row">
+        <button class="btn btn-ghost" id="csvBtn" type="button">⬇️ Export CSV</button>
+        <button class="btn btn-ghost" id="printBtn" type="button">🖨️ Cetak</button>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script type="module" src="assets/js/data.js"></script>
+</body>
+</html>

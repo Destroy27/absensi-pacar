@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Absen — Absensi Harian</title>
+<meta name="description" content="Website absensi harian sederhana dengan database Firebase Firestore.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💗</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-dot">💗</span>
+      <span id="brandName">Absensi</span>
+    </a>
+    <nav class="nav">
+      <a href="index.html" class="active">Absen</a>
+      <a href="data.html">Data</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <p class="eyebrow" id="todayLabel">—</p>
+    <h1 id="pageTitle">Absen Hari Ini</h1>
+    <p class="sub" id="pageSub">Pilih nama, lalu tandai kehadiranmu.</p>
+  </section>
+
+  <div class="grid-2">
+
+    <section class="card">
+      <form id="absenForm" class="stack" novalidate>
+
+        <div class="field">
+          <label for="member">Nama</label>
+          <select id="member" required>
+            <option value="">Memuat…</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Status</label>
+          <div class="status-grid" id="statusGrid"></div>
+        </div>
+
+        <div class="field">
+          <label for="reason">Alasan / Catatan <span class="hint" id="reasonHint">(opsional)</span></label>
+          <textarea id="reason" rows="3" placeholder="Contoh: demam, ada acara keluarga…"></textarea>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="submitBtn" type="submit">Kirim Absen</button>
+        <p class="msg" id="formMsg"></p>
+
+      </form>
+    </section>
+
+    <aside class="stack">
+
+      <section class="card" id="sessionCard">
+        <div class="card-head">
+          <h2>Sesi Absen</h2>
+          <span class="pill" id="sessionPill">Memuat…</span>
+        </div>
+        <p class="session-title" id="sessionTitle">—</p>
+        <div class="session-time">
+          <div><span class="muted">Buka</span><strong id="openAt">—</strong></div>
+          <div class="arrow">→</div>
+          <div><span class="muted">Tutup</span><strong id="closeAt">—</strong></div>
+        </div>
+        <div class="countdown" id="countdown">—</div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Sudah Absen</h2>
+          <span class="muted small" id="todayCount">0</span>
+        </div>
+        <ul class="list" id="todayList">
+          <li class="empty">Belum ada data.</li>
+        </ul>
+      </section>
+
+    </aside>
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script type="module" src="assets/js/absen.js"></script>
+</body>
+</html>

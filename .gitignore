@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Node (kalau nanti pakai tooling)
+node_modules/
+npm-debug.log*
+
+# Firebase
+.firebase/
+firebase-debug.log
+*-debug.log
+
+# Rahasia — jangan pernah di-commit
+*.serviceAccount.json
+serviceAccountKey.json
+.env
+.env.*
